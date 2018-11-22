@@ -57,6 +57,7 @@
      <Compile Include="Assets\_Project\Scripts\BoatStats.cs" />
      <Compile Include="Assets\_Project\Scripts\LvlManager.cs" />
      <Compile Include="Assets\_Project\Scripts\Personaje.cs" />
+     <Compile Include="Assets\_Project\Scripts\TimeManager.cs" />
      <Compile Include="Assets\_Project\Scripts\UI.cs" />
      <Compile Include="Assets\_Project\Scripts\Water.cs" />
      <Compile Include="Assets\RainMaker\Demo\DemoScript.cs" />

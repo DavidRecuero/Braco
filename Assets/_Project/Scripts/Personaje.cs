@@ -23,6 +23,12 @@ public class Personaje : MonoBehaviour {
     public float jumpForce;
     public bool isGrounded;        //must be colliding with an object tagged as "ground"
 
+    [Header("Day & Time")]
+    public float secsForDay;
+    public float secToUpdateSun;
+    public float daysToEnd;
+    [HideInInspector] public int currentDay; 
+
     [Header("Inventory")]   //privatizar cosas despues de debug
     public bool bigInventoryActive;
 
@@ -68,6 +74,8 @@ public class Personaje : MonoBehaviour {
 		gameEnded = false;
 
 		Cursor.visible = false;
+
+        currentDay = 0;
 
         inventory = Objects.Empty;
 
@@ -116,6 +124,9 @@ public class Personaje : MonoBehaviour {
                 if (Input.GetKeyDown("q"))
                     ThrowAction(inventory);
             }
+
+            if (currentDay == daysToEnd)
+                ShowText("Time ended");
 
             InventoryHudManager();
 
@@ -313,7 +324,7 @@ public class Personaje : MonoBehaviour {
             isGrounded = true;
     }
 
-    void ShowText(string text_)
+    public void ShowText(string text_)
     {
         message.text = text_;
         messageAlpha = 255;
