@@ -1,5 +1,6 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
+using UnityEngine.SceneManagement;
 using UnityEngine;
 
 public class TimeManager : MonoBehaviour {
@@ -9,7 +10,6 @@ public class TimeManager : MonoBehaviour {
     private float gradesForEachUpdate;
     private GameObject player;
 
-	// Use this for initialization
 	void Start () {
 
         player = GameObject.FindWithTag("Player");
@@ -18,13 +18,7 @@ public class TimeManager : MonoBehaviour {
 
         gradesForEachUpdate = (360f / secsForDay) * secToUpdateSun;
 
-        InvokeRepeating("RotateLight", 0, secToUpdateSun);
-        InvokeRepeating("DayPassed", secsForDay, secsForDay);
-    }
-	
-	// Update is called once per frame
-	void Update () {
-        
+		InvokeRepeating("RotateLight", secToUpdateSun, secToUpdateSun);
     }
 
     void RotateLight()
@@ -32,9 +26,13 @@ public class TimeManager : MonoBehaviour {
         transform.Rotate(gradesForEachUpdate, 0, 0);
     }
 
-    void DayPassed()
-    {
-        player.GetComponent<Personaje>().currentDay++;
-        player.GetComponent<Personaje>().ShowText(player.GetComponent<Personaje>().currentDay.ToString());
-    }
+	public void RotateLightSuddenly(float seconds)
+	{
+		float grades = gradesForEachUpdate * seconds / secToUpdateSun;
+
+		GlobalVariables.currentSecond += seconds;
+
+		transform.Rotate(grades, 0, 0);
+	}
+
 }

@@ -9,7 +9,7 @@
     <ProductVersion>10.0.20506</ProductVersion>
     <SchemaVersion>2.0</SchemaVersion>
     <RootNamespace></RootNamespace>
-    <ProjectGuid>{F57E3617-2096-D1DD-7750-91A1F280CE7D}</ProjectGuid>
+    <ProjectGuid>{ABD29A43-02A4-E154-4364-032BC45EF9D3}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <AssemblyName>Assembly-CSharp</AssemblyName>
@@ -53,6 +53,7 @@
   <ItemGroup>
      <Compile Include="Assets\_Project\Scripts\Boat.cs" />
      <Compile Include="Assets\_Project\Scripts\BoatStats.cs" />
+     <Compile Include="Assets\_Project\Scripts\GlobalVariables.cs" />
      <Compile Include="Assets\_Project\Scripts\LvlManager.cs" />
      <Compile Include="Assets\_Project\Scripts\Personaje.cs" />
      <Compile Include="Assets\_Project\Scripts\TimeManager.cs" />

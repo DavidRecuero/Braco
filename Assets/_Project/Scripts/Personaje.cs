@@ -28,6 +28,9 @@ public class Personaje : MonoBehaviour {
     public float secToUpdateSun;
     public float daysToEnd;
     [HideInInspector] public int currentDay; 
+	private GameObject sun;
+	public float secondsTeleportWhenAsleep;
+	public float secondsTeleportWhenRest;
 
     [Header("Inventory")]   //privatizar cosas despues de debug
     public bool bigInventoryActive;
@@ -59,6 +62,12 @@ public class Personaje : MonoBehaviour {
     public RawImage[] bigInventoryHUD;
     public RawImage[] bigInventorySelectedHUD;
 
+	[Header("Tiredness")]
+	public Image bar;   //Chrono
+	public float secondsToSleep;
+	private float secondsWithoutSleep;
+
+	[Header("Textures")]
     public Texture velaTexture;       
 	public Texture mastilTexture;        
 	public Texture remacheTexture;        
@@ -75,7 +84,11 @@ public class Personaje : MonoBehaviour {
 
 		Cursor.visible = false;
 
+		sun = GameObject.FindWithTag("Directional Light");
+
         currentDay = 0;
+
+		secondsWithoutSleep = 0;
 
         inventory = Objects.Empty;
 
@@ -125,9 +138,6 @@ public class Personaje : MonoBehaviour {
                     ThrowAction(inventory);
             }
 
-            if (currentDay == daysToEnd)
-                ShowText("Time ended");
-
             InventoryHudManager();
 
             TextAnimation();
@@ -140,174 +150,158 @@ public class Personaje : MonoBehaviour {
             tutorial.gameObject.SetActive(false);
             BoatStats.showTutorial = false;
         }
+
+
+
+
+
+		bar.fillAmount = (secondsToSleep - secondsWithoutSleep) / secondsToSleep;
+		secondsWithoutSleep += Time.deltaTime;
+		GlobalVariables.currentSecond += Time.deltaTime;
+
+		if (secondsWithoutSleep > secondsToSleep) 
+		{
+			ShowText ("You fall asleep");
+
+			sun.GetComponent<TimeManager>().RotateLightSuddenly(secondsTeleportWhenAsleep);
+
+			secondsWithoutSleep = 0;
+		}
+
+		if (GlobalVariables.currentSecond >= secsForDay * daysToEnd)
+			ShowText("Time ended");
+
+		for (int i = 0; i < daysToEnd; i++) //guarrisimo
+		{
+			if (GlobalVariables.currentSecond > secsForDay * i)
+				currentDay = i;
+		}
+
+		Debug.Log (GlobalVariables.currentSecond + " | Day " + (currentDay+1));
     }
 
 	void OnTriggerStay(Collider other)
 	{
-		if (other.gameObject.CompareTag("Hammer"))
-		{
-			if (Input.GetKeyDown("e"))
-			{
-				hammerPicked = true;
-				other.gameObject.SetActive(false);
-                ShowText("Hammer picked");
-                hammerImage.color = new Color32(255, 255, 255, 255); 
-			}
-		}
-		else if (other.gameObject.CompareTag("Mast"))
-		{
-			if (Input.GetKeyDown("e"))
-			{
-                if (bigInventoryActive)
-                {
-                    PickSomething(Objects.Mast);
-                    other.gameObject.SetActive(false);
-                }
-                else
-                {
-                    if (inventory == Objects.Empty)
-                    {
-                        other.gameObject.SetActive(false);
-                        inventory = Objects.Mast;
-                        ShowText("Mast picked");
-                    }
-                    else
-                        ShowText("You are carrying something");
-                }
-            }
-		}
-		else if (other.gameObject.CompareTag("Shield"))
-		{
-
-			if (Input.GetKeyDown("e"))
-			{
-                if (bigInventoryActive)
-                {
-                    PickSomething(Objects.Shield);
-                    other.gameObject.SetActive(false);
-                }
-                else
-                {
-                    if (inventory == Objects.Empty)
-                    {
-                        other.gameObject.SetActive(false);
-                        inventory = Objects.Shield;
-                        ShowText("Shield picked");
-                    }
-                    else
-                        ShowText("You are carrying something");
-                }
-            }
-		}
-		else if (other.gameObject.CompareTag("Control"))
-		{
-
-			if (Input.GetKeyDown("e"))
-			{
-                if (bigInventoryActive)
-                {
-                    PickSomething(Objects.Control);
-                    other.gameObject.SetActive(false);
-                }
-                else
-                {
-                    if (inventory == Objects.Empty)
-                    {
-                        other.gameObject.SetActive(false);
-                        inventory = Objects.Control;
-                        ShowText("Control picked");
-                    }
-                    else
-                        ShowText("You are carrying something");
-                }
-            }
-		}
-		else if (other.gameObject.CompareTag("Velocity"))
-		{
-
-			if (Input.GetKeyDown("e"))
-			{
-                if (bigInventoryActive)
-                {
-                    PickSomething(Objects.Velocity);
-                    other.gameObject.SetActive(false);
-                }
-                else
-                {
-                    if (inventory == Objects.Empty)
-                    {
-                        other.gameObject.SetActive(false);
-                        inventory = Objects.Velocity;
-                        ShowText("Velocity picked");
-                    }
-                    else
-                        ShowText("You are carrying something");
-                }
-			}
-		}
-		else if (other.gameObject.CompareTag("Boat"))
-		{
-
-			if (Input.GetKeyDown("e"))
-			{
-				if (hammerPicked)
-				{
-					if (inventory == Objects.Mast)
-					{
-						inventory = Objects.Empty;
-						mastPicked = true;
-						other.transform.Find("Mast").gameObject.SetActive(true);
-
-                        ShowText("Mast fixed");
-                    }
-					else if (inventory == Objects.Shield)
-					{
-						inventory = Objects.Empty;
-						BoatStats.boatShield++;
-
-						if(BoatStats.boatShield == 2f)
-							other.transform.Find("Broken 1").gameObject.SetActive(false);
-						else
-							other.transform.Find("Broken 2").gameObject.SetActive(false);
-
-                        ShowText("Shield fixed");
-					}
-					else if (inventory == Objects.Control)
-					{
-						inventory = Objects.Empty;
-						BoatStats.boatControl++;
-
-						if(BoatStats.boatControl == 2f)
-							other.transform.Find("Paddle 1").gameObject.SetActive(true);
-						else
-							other.transform.Find("Paddle 2").gameObject.SetActive(true);
-
-                        ShowText("Control fixed");
-
-                    }
-					else if (inventory == Objects.Velocity)
-					{
-                        if (mastPicked)
-                        {
-                            inventory = Objects.Empty;
-                            BoatStats.boatVelocity++;
-
-                            if (BoatStats.boatVelocity == 2f)
-                                other.transform.Find("Flag 1").gameObject.SetActive(true);
-                            else
-                                other.transform.Find("Flag 2").gameObject.SetActive(true);
-
-                            ShowText("Velocity fixed");
-
-                        }
-                        else
-                            ShowText("You need to fix the mast!");
-					}
-					else if (inventory == Objects.Empty)
-                        ShowText("You are carrying nothing");
+		if (Input.GetKeyDown ("e")) {
+			if (other.gameObject.CompareTag ("Hammer")) {
+				if (Input.GetKeyDown ("e")) {
+					hammerPicked = true;
+					other.gameObject.SetActive (false);
+					ShowText ("Hammer picked");
+					hammerImage.color = new Color32 (255, 255, 255, 255); 
 				}
-				else
-                    ShowText("You need to pick the hammer!");
+			} 
+			else if (other.gameObject.CompareTag ("Mast")) {
+					if (bigInventoryActive) {
+						PickSomething (Objects.Mast);
+						other.gameObject.SetActive (false);
+					} else {
+						if (inventory == Objects.Empty) {
+							other.gameObject.SetActive (false);
+							inventory = Objects.Mast;
+							ShowText ("Mast picked");
+						} else
+							ShowText ("You are carrying something");
+					}
+			} 
+			else if (other.gameObject.CompareTag ("Shield")) 
+			{
+					if (bigInventoryActive) {
+						PickSomething (Objects.Shield);
+						other.gameObject.SetActive (false);
+					} else {
+						if (inventory == Objects.Empty) {
+							other.gameObject.SetActive (false);
+							inventory = Objects.Shield;
+							ShowText ("Shield picked");
+						} else
+							ShowText ("You are carrying something");
+					}
+			} 
+			else if (other.gameObject.CompareTag ("Control")) 
+			{
+					if (bigInventoryActive) {
+						PickSomething (Objects.Control);
+						other.gameObject.SetActive (false);
+					} else {
+						if (inventory == Objects.Empty) {
+							other.gameObject.SetActive (false);
+							inventory = Objects.Control;
+							ShowText ("Control picked");
+						} else
+							ShowText ("You are carrying something");
+					}
+			} 
+			else if (other.gameObject.CompareTag ("Velocity")) {
+
+					if (bigInventoryActive) {
+						PickSomething (Objects.Velocity);
+						other.gameObject.SetActive (false);
+					} else {
+						if (inventory == Objects.Empty) {
+							other.gameObject.SetActive (false);
+							inventory = Objects.Velocity;
+							ShowText ("Velocity picked");
+						} else
+							ShowText ("You are carrying something");
+					}
+			} 
+			else if (other.gameObject.CompareTag ("Boat")) {
+
+					if (hammerPicked) {
+						if (inventory == Objects.Mast) {
+							inventory = Objects.Empty;
+							mastPicked = true;
+							other.transform.Find ("Mast").gameObject.SetActive (true);
+
+							ShowText ("Mast fixed");
+						} else if (inventory == Objects.Shield) {
+							inventory = Objects.Empty;
+							BoatStats.boatShield++;
+
+							if (BoatStats.boatShield == 2f)
+								other.transform.Find ("Broken 1").gameObject.SetActive (false);
+							else
+								other.transform.Find ("Broken 2").gameObject.SetActive (false);
+
+							ShowText ("Shield fixed");
+						} else if (inventory == Objects.Control) {
+							inventory = Objects.Empty;
+							BoatStats.boatControl++;
+
+							if (BoatStats.boatControl == 2f)
+								other.transform.Find ("Paddle 1").gameObject.SetActive (true);
+							else
+								other.transform.Find ("Paddle 2").gameObject.SetActive (true);
+
+							ShowText ("Control fixed");
+
+						} else if (inventory == Objects.Velocity) {
+							if (mastPicked) {
+								inventory = Objects.Empty;
+								BoatStats.boatVelocity++;
+
+								if (BoatStats.boatVelocity == 2f)
+									other.transform.Find ("Flag 1").gameObject.SetActive (true);
+								else
+									other.transform.Find ("Flag 2").gameObject.SetActive (true);
+
+								ShowText ("Velocity fixed");
+
+							} else
+								ShowText ("You need to fix the mast!");
+						} else if (inventory == Objects.Empty)
+							ShowText ("You are carrying nothing");
+					} else
+						ShowText ("You need to pick the hammer!");
+			} 
+			else if (other.gameObject.CompareTag ("Bed")) 
+			{
+				ShowText ("You have rest");
+
+				sun.GetComponent<TimeManager> ().RotateLightSuddenly (secondsTeleportWhenRest);
+
+				secondsWithoutSleep = 0;
 			}
 		}
 	}  
