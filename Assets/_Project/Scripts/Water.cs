@@ -18,18 +18,29 @@ public class Water : MonoBehaviour {
 	public Canvas endGame;
 	public Canvas hud;
 	public Text finalMessage;
-	
+
+	public GameObject k;
 
 	void Update () {
 
         if (!BoatStats.showTutorial)
         {
-            if (transform.position.y > 7.15)
+            if (transform.position.y > 7.15f)
                 SceneManager.LoadScene("Boat", LoadSceneMode.Single);   //Scene end
-            else if (transform.position.y > 3.75)
+            else if (transform.position.y > 3.75f)
+			{
                 transform.Translate(0f, marea * multMarea, 0f);        //More velocity
+			}
             else
                 transform.Translate(0f, marea, 0f);                    //Initial state
+
+			if(transform.position.y > 1.5f)
+			{
+				if (Input.GetKeyDown ("k"))
+					SceneManager.LoadScene("Boat", LoadSceneMode.Single);
+
+				k.SetActive (true);
+			}
         }
 
 	}

@@ -1,4 +1,4 @@
 sceneSetups:
-- path: Assets/_Project/Scenes/MechanicsTest.unity
+- path: Assets/_Project/Scenes/Astillero.unity
   isLoaded: 1
   isActive: 1

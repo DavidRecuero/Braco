@@ -102,7 +102,7 @@ public class Boat : MonoBehaviour
             GameOverMessage();
 
         else if (other.gameObject.CompareTag("Finish"))
-            WinMessage();
+			SceneManager.LoadScene ("MechanicsTest");
     }
 
     void BoatMovement()

@@ -23,6 +23,12 @@ public class Personaje : MonoBehaviour {
     public float jumpForce;
     public bool isGrounded;        //must be colliding with an object tagged as "ground"
 
+	[Header("Shoot")]    //privatizar cosas despues de debug
+	public bool activeShoot;
+	public GameObject bullet;
+	private float currentDelay;
+	public float totalDelay;
+
     [Header("Day & Time")]
     public float secsForDay;
     public float secToUpdateSun;
@@ -35,12 +41,12 @@ public class Personaje : MonoBehaviour {
     [Header("Inventory")]   //privatizar cosas despues de debug
     public bool bigInventoryActive;
 
-    [HideInInspector] public enum Objects { Empty, Velocity, Control, Shield, Mast };
+	[HideInInspector] public enum Objects { Empty, Velocity, Control, Shield, Mast };
     private Objects inventory;
     private bool hammerPicked = false;
     private bool mastPicked = false;
 
-    public Objects[] bigInventory = new Objects[5] { Objects.Empty, Objects.Empty, Objects.Empty, Objects.Empty, Objects.Empty };
+	public Objects[] bigInventory = new Objects[5] { Objects.Empty, Objects.Empty, Objects.Empty, Objects.Empty, Objects.Empty };
     public int inventoryCurrentPosition;
 
     [Header("Items GameObjects")]
@@ -62,10 +68,12 @@ public class Personaje : MonoBehaviour {
     public RawImage[] bigInventoryHUD;
     public RawImage[] bigInventorySelectedHUD;
 
+	public Text day;
+
 	[Header("Tiredness")]
 	public Image bar;   //Chrono
+	//private float secondsWithoutSleep;
 	public float secondsToSleep;
-	private float secondsWithoutSleep;
 
 	[Header("Textures")]
     public Texture velaTexture;       
@@ -76,7 +84,11 @@ public class Personaje : MonoBehaviour {
 
     [HideInInspector] public bool gameEnded;
 
-    private Camera fpsCamera;
+	private Camera fpsCamera;
+
+	[HideInInspector] public bool freezeMov;
+
+	[HideInInspector] public Vector3 initPos;
     
     void Start ()
     {
@@ -86,13 +98,12 @@ public class Personaje : MonoBehaviour {
 
 		sun = GameObject.FindWithTag("Directional Light");
 
-        currentDay = 0;
-
-		secondsWithoutSleep = 0;
-
         inventory = Objects.Empty;
 
         fpsCamera = Camera.main;
+		freezeMov = false;
+
+		initPos = transform.position;
 
         BoatStats.boatShield = 1.0f;
 		BoatStats.boatVelocity = 1.0f;
@@ -109,6 +120,11 @@ public class Personaje : MonoBehaviour {
 	
 	void Update ()
     {
+		//Debug.Log (GlobalVariables.currentSecond);
+
+		if (transform.position.y < -20f)
+			transform.position = initPos;
+
 		if (!gameEnded)
         {
             PlayerMovement();
@@ -153,32 +169,47 @@ public class Personaje : MonoBehaviour {
 
 
 
+		//TIME
 
-
-		bar.fillAmount = (secondsToSleep - secondsWithoutSleep) / secondsToSleep;
-		secondsWithoutSleep += Time.deltaTime;
+		bar.fillAmount = (secondsToSleep - GlobalVariables.secondsWithoutSleep) / secondsToSleep;
+		GlobalVariables.secondsWithoutSleep += Time.deltaTime;
 		GlobalVariables.currentSecond += Time.deltaTime;
 
-		if (secondsWithoutSleep > secondsToSleep) 
+		if (GlobalVariables.secondsWithoutSleep > secondsToSleep) 
 		{
 			ShowText ("You fall asleep");
 
-			sun.GetComponent<TimeManager>().RotateLightSuddenly(secondsTeleportWhenAsleep);
+			GlobalVariables.secondsWithoutSleep = 0;
 
-			secondsWithoutSleep = 0;
+			sun.GetComponent<TimeManager>().RotateLightSuddenly(secondsTeleportWhenAsleep);
 		}
 
-		if (GlobalVariables.currentSecond >= secsForDay * daysToEnd)
-			ShowText("Time ended");
+		//if (GlobalVariables.currentSecond >= secsForDay * daysToEnd)
+		//	ShowText("Time ended \n You could not save yourself");
 
-		for (int i = 0; i < daysToEnd; i++) //guarrisimo
+		for (int i = 0; i < daysToEnd + 1; i++) //guarrisimo
 		{
 			if (GlobalVariables.currentSecond > secsForDay * i)
 				currentDay = i;
 		}
 
-		Debug.Log (GlobalVariables.currentSecond + " | Day " + (currentDay+1));
-    }
+		if (currentDay == 3)
+				ShowText("Time ended \n You could not save yourself");
+
+		//Debug.Log (GlobalVariables.currentSecond + " | Day " + (currentDay+1));
+		//Debug.Log (currentDay + 1);
+		day.text = "Day " + (currentDay + 1);
+
+		//SHOOT
+
+		currentDelay += Time.deltaTime;
+
+		if (Input.GetMouseButtonDown(0) && activeShoot && currentDelay > totalDelay) 
+		{
+			Instantiate (bullet, fpsCamera.transform.position + fpsCamera.transform.forward * 1.5f, fpsCamera.transform.rotation);
+			currentDelay = 0;
+		}
+	}
 
 	void OnTriggerStay(Collider other)
 	{
@@ -301,7 +332,7 @@ public class Personaje : MonoBehaviour {
 
 				sun.GetComponent<TimeManager> ().RotateLightSuddenly (secondsTeleportWhenRest);
 
-				secondsWithoutSleep = 0;
+				GlobalVariables.secondsWithoutSleep = 0;
 			}
 		}
 	}  
@@ -317,6 +348,12 @@ public class Personaje : MonoBehaviour {
         if (other.gameObject.CompareTag("Ground"))
             isGrounded = true;
     }
+
+	void OnCollisionEnter(Collision other)
+	{
+		if (other.gameObject.CompareTag ("Barrera"))
+			ShowText ("You can not pass");
+	}
 
     public void ShowText(string text_)
     {
@@ -457,34 +494,35 @@ public class Personaje : MonoBehaviour {
     void PlayerMovement()
     {
         /////////////////////////////////////////////////////////////////////////////////////////////////MOVIMIENTO
+		if (!freezeMov) {
 
-        h = horizontalSpeed * Input.GetAxis("Mouse X");
-        v = verticalSpeed * Input.GetAxis("Mouse Y");
+			h = horizontalSpeed * Input.GetAxis ("Mouse X");
+			v = verticalSpeed * Input.GetAxis ("Mouse Y");
 
-        transform.Rotate(0, h, 0);                                                                                 //Horizontal rotation
+			transform.Rotate (0, h, 0);                                                                                 //Horizontal rotation
 
-        if (fpsCamera.transform.eulerAngles.x - v > 90f && fpsCamera.transform.eulerAngles.x - v < 360f - 90f)      //Vertical Rotation limited between 90 and -90 degrees
-        {
-            float diff = 90f - fpsCamera.transform.eulerAngles.x;
+			if (fpsCamera.transform.eulerAngles.x - v > 90f && fpsCamera.transform.eulerAngles.x - v < 360f - 90f) {      //Vertical Rotation limited between 90 and -90 degrees
+				float diff = 90f - fpsCamera.transform.eulerAngles.x;
 
-            if (diff < 0)
-                fpsCamera.transform.eulerAngles = new Vector3(270f, fpsCamera.transform.eulerAngles.y, fpsCamera.transform.eulerAngles.z);
-            else
-                fpsCamera.transform.eulerAngles = new Vector3(90f, fpsCamera.transform.eulerAngles.y, fpsCamera.transform.eulerAngles.z);
-        }
-        else
-            fpsCamera.transform.Rotate(-v, 0, 0);
+				if (diff < 0)
+					fpsCamera.transform.eulerAngles = new Vector3 (270f, fpsCamera.transform.eulerAngles.y, fpsCamera.transform.eulerAngles.z);
+				else
+					fpsCamera.transform.eulerAngles = new Vector3 (90f, fpsCamera.transform.eulerAngles.y, fpsCamera.transform.eulerAngles.z);
+			} else
+				fpsCamera.transform.Rotate (-v, 0, 0);
+		
+			///////////////////////////////////////////////////////////WASD
 
-        ///////////////////////////////////////////////////////////WASD
+			if (Input.GetKey (KeyCode.W))
+				transform.Translate (0, 0, ySpeed);
+			else if (Input.GetKey (KeyCode.S))
+				transform.Translate (0, 0, -ySpeed);
 
-        if (Input.GetKey(KeyCode.W))
-            transform.Translate(0, 0, ySpeed);
-        else if (Input.GetKey(KeyCode.S))
-            transform.Translate(0, 0, -ySpeed);
+			if (Input.GetKey (KeyCode.D))
+				transform.Translate (xSpeed, 0, 0);
+			else if (Input.GetKey (KeyCode.A))
+				transform.Translate (-xSpeed, 0, 0);
 
-        if (Input.GetKey(KeyCode.D))
-            transform.Translate(xSpeed, 0, 0);
-        else if (Input.GetKey(KeyCode.A))
-            transform.Translate(-xSpeed, 0, 0);
+		}
     }
 }
