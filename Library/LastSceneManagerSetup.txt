@@ -1,4 +1,4 @@
 sceneSetups:
-- path: Assets/_Project/Scenes/Rachmaninov_01.unity
+- path: Assets/_Project/Scenes/Astillero.unity
   isLoaded: 1
   isActive: 1
